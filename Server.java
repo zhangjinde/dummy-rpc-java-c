@@ -12,8 +12,6 @@ public class Server {
       while (true) {
         try (Socket socket = server.accept();) {
           accept(socket);
-        } catch(Exception e) {
-          e.printStackTrace();
         }
       }
     } catch (Exception e) {
