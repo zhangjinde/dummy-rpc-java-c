@@ -48,20 +48,62 @@ struct class_field {
   char *name;
   unsigned char type;
   char *type_name;
+  // TODO value (union)
   struct class_field *next;
 };
 
 struct class_desc {
   char *name;
-  long uid;
+  unsigned long uid;
   unsigned char desc_flag;
   struct class_field *field;
 };
 
-char *new_str(const char *str) {
+// TODO リストにする
+struct class_desc class_desc_1;
+
+void class_desc_preview(struct class_desc *desc) {
+  puts("class_desc_preview");
+  printf("name: %s\n", desc->name);
+  printf("uid: %lx\n", desc->uid);
+  printf("flag: %02x\n", desc->desc_flag);
+  if (desc->field != NULL) {
+    struct class_field *f = desc->field;
+    while (f != NULL) {
+      puts("field:");
+      printf("  name: %s\n", f->name);
+      printf("  type: %c\n", f->type);
+      printf("  type_name: %s\n", f->type_name == NULL ? "null" : f->type_name);
+      f = f->next;
+    }
+  }
+}
+
+void class_desc_append_field(struct class_desc *desc, struct class_field *field) {
+  field->next = NULL;
+
+  if (desc->field == NULL) {
+    desc->field = field;
+  } else {
+    struct class_field *f = desc->field;
+    while (f->next != NULL) {
+      f = f->next;
+    }
+    f->next = field;
+  }
+}
+
+char *new_str(const unsigned char *str) {
   const size_t len = strlen(str) + 1;
   char *ret = malloc(sizeof(char) * len);
   strcpy(ret, str);
+  return ret;
+}
+
+char *new_nstr(const unsigned char *str, const size_t len) {
+  char *ret = malloc(sizeof(char) * (len + 1));
+  strncpy(ret, str, len);
+  memset(&ret[len], '\0', 1);
   return ret;
 }
 
@@ -147,8 +189,11 @@ size_t blist_recv(int sd, struct blist **list) {
   return len_sum;
 }
 
-size_t dump_utf(const char *desc, const unsigned char *bytes) {
-  const unsigned char stringlen = (bytes[0] << 4) + bytes[1];
+size_t dump_utf(char **dest, const char *desc, const unsigned char *bytes) {
+  const unsigned char stringlen = (bytes[0] << 8) + bytes[1];
+  if (dest != NULL) {
+    *dest = new_nstr(&bytes[2], stringlen);
+  }
   return 2 + hexdump(desc, &bytes[2], stringlen);
 }
 
@@ -168,14 +213,17 @@ size_t dump_className1(const unsigned char *bytes, const size_t len) {
   return read;
 }
 
-size_t dump_fieldName(const unsigned char *bytes, const size_t len) {
-  return dump_utf("fieldName", bytes);
+size_t dump_fieldName(struct class_field *field, const unsigned char *bytes, const size_t len) {
+  return dump_utf(field == NULL ? NULL : &field->name, "fieldName", bytes);
 }
 
-size_t dump_fieldDesc(const unsigned char *bytes, const size_t len) {
+size_t dump_fieldDesc(struct class_field *field, const unsigned char *bytes, const size_t len) {
   printf("fieldDesc\n");
   size_t read = 0;
   read += hexdump("typecode", &bytes[read], 1);
+  if (field != NULL) {
+    field->type = bytes[0];
+  }
   switch (bytes[0]) {
     case 'B':	// byte
     case 'C':	// char
@@ -185,31 +233,36 @@ size_t dump_fieldDesc(const unsigned char *bytes, const size_t len) {
     case 'J':	// long
     case 'S':	// short
     case 'Z':	// boolean
-      read += dump_fieldName(&bytes[read], len - read);
+      read += dump_fieldName(field, &bytes[read], len - read);
       break;
     case '[':	// array
     case 'L':	// object
-      read += dump_fieldName(&bytes[read], len - read);
+      read += dump_fieldName(field, &bytes[read], len - read);
       read += dump_className1(&bytes[read], len - read);
       break;
   }
   return read;
 }
 
-size_t dump_fields(const unsigned char *bytes, const size_t len) {
+size_t dump_fields(struct class_desc *desc, const unsigned char *bytes, const size_t len) {
   size_t read = 0;
   read += hexdump("count", &bytes[0], 2);
-  unsigned short count = (bytes[0] << 4) + bytes[1];
+  unsigned short count = (bytes[0] << 8) + bytes[1];
   for (size_t i = 0; i < count; i++) {
-    read += dump_fieldDesc(&bytes[read], len - read);
+    struct class_field *field = malloc(sizeof(struct class_field));
+    read += dump_fieldDesc(field, &bytes[read], len - read);
+    class_desc_append_field(desc, field);
   }
   return read;
 }
 
-size_t dump_classDescFlags(const unsigned char flag) {
+size_t dump_classDescFlags(struct class_desc *desc, const unsigned char flag) {
   char *name;
   switch (flag) {
   case SC_SERIALIZABLE: name = "SC_SERIALIZABLE"; break;
+  }
+  if (desc != NULL) {
+    desc->desc_flag = flag;
   }
   return hexdump(name, &flag, 1);
 }
@@ -237,10 +290,10 @@ size_t dump_superClassDesc(const unsigned char *bytes, const size_t len) {
   return dump_classDesc(bytes, len);
 }
 
-size_t dump_classDescInfo(const unsigned char *bytes, const size_t len) {
+size_t dump_classDescInfo(struct class_desc *desc, const unsigned char *bytes, const size_t len) {
   size_t read = 0;
-  read += dump_classDescFlags(bytes[read]);
-  read += dump_fields(&bytes[read], len - read);
+  read += dump_classDescFlags(desc, bytes[read]);
+  read += dump_fields(desc, &bytes[read], len - read);
   read += dump_classAnnotation(&bytes[read], len - read);
   read += dump_superClassDesc(&bytes[read], len - read);
   return read;
@@ -251,12 +304,19 @@ size_t dump_newHandle(const unsigned char *bytes, const size_t len) {
   return hexdump("newHandle", bytes, 0);
 }
 
-size_t dump_serialVersionUID(const unsigned char *bytes, const size_t len) {
-  return hexdump("serialVersionUID", bytes, len);
+size_t dump_serialVersionUID(struct class_desc *desc, const unsigned char *bytes) {
+  if (desc != NULL) {
+    desc->uid = bytes[0];
+    for (size_t i = 1; i < 8; i++) {
+      desc->uid <<= 8;
+      desc->uid += bytes[i];
+    }
+  }
+  return hexdump("serialVersionUID", bytes, 8);
 }
 
-size_t dump_className(const unsigned char *bytes, const size_t len) {
-  return dump_utf("className", bytes);
+size_t dump_className(struct class_desc *desc, const unsigned char *bytes, const size_t len) {
+  return dump_utf(&desc->name, "className", bytes);
 }
 
 size_t dump_newString(const unsigned char *bytes, const size_t len) {
@@ -265,21 +325,22 @@ size_t dump_newString(const unsigned char *bytes, const size_t len) {
     case TC_STRING:
       // TODO newHandle
       read += hexdump("TC_STRING", &bytes[read], 1);
-      read += dump_utf("newString", &bytes[read]);
+      read += dump_utf(NULL, "newString", &bytes[read]);
   }
   return read;
 }
 
 size_t dump_newClassDesc(const unsigned char *bytes, const size_t len) {
-  // TODO クラスオブジェクトを作る
+  // TODO 新しいclass_descをリストにappendする
   size_t read = 0;
   switch (bytes[0]) {
   case TC_CLASSDESC: // className serialVersionUID newHandle classDescInfo
     read += hexdump("TC_CLASSDESC", &bytes[read], 1);
-    read += dump_className(&bytes[read], len - read);
-    read += dump_serialVersionUID(&bytes[read], 8);
+    read += dump_className(&class_desc_1, &bytes[read], len - read);
+    read += dump_serialVersionUID(&class_desc_1, &bytes[read]);
     // newHandle
-    read += dump_classDescInfo(&bytes[read], len - read);
+    read += dump_classDescInfo(&class_desc_1, &bytes[read], len - read);
+    class_desc_preview(&class_desc_1);
     break;
   case TC_PROXYCLASSDESC: // newHandle proxyClassDescInfo
     // hexdump("TC_PROXYCLASSDESC", &bytes[0], 1);
