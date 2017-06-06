@@ -44,6 +44,27 @@ struct blist {
   struct blist *next;
 };
 
+struct class_field {
+  char *name;
+  unsigned char type;
+  char *type_name;
+  struct class_field *next;
+};
+
+struct class_desc {
+  char *name;
+  long uid;
+  unsigned char desc_flag;
+  struct class_field *field;
+};
+
+char *new_str(const char *str) {
+  const size_t len = strlen(str) + 1;
+  char *ret = malloc(sizeof(char) * len);
+  strcpy(ret, str);
+  return ret;
+}
+
 size_t hexdump(const char *desc, const unsigned char *pc, const size_t len) {
   int i;
   unsigned char buff[17];
@@ -133,8 +154,11 @@ size_t dump_utf(const char *desc, const unsigned char *bytes) {
 
 size_t dump_classAnnotation(const unsigned char *bytes, const size_t len) {
   switch (bytes[0]) {
-    case TC_ENDBLOCKDATA: return hexdump("TC_ENDBLOCKDATA", bytes, 1);
-    default: return dump_contents(bytes, len);
+  case TC_ENDBLOCKDATA:
+    return hexdump("TC_ENDBLOCKDATA", bytes, 1);
+  default:
+    printf("not implemented\n");
+    return 0;
   }
 }
 
@@ -247,6 +271,7 @@ size_t dump_newString(const unsigned char *bytes, const size_t len) {
 }
 
 size_t dump_newClassDesc(const unsigned char *bytes, const size_t len) {
+  // TODO クラスオブジェクトを作る
   size_t read = 0;
   switch (bytes[0]) {
   case TC_CLASSDESC: // className serialVersionUID newHandle classDescInfo
@@ -296,7 +321,7 @@ size_t dump_object(const unsigned char *bytes, const size_t len) {
   return read;
 }
 
-size_t dump_contents(const unsigned char* bytes, const size_t len) {
+size_t dump_content(const unsigned char* bytes, const size_t len) {
   size_t read = 0;
   switch (bytes[0]) {
   case TC_OBJECT:
@@ -306,6 +331,14 @@ size_t dump_contents(const unsigned char* bytes, const size_t len) {
   default:
     printf("not implemented\n");
     return 0;
+  }
+  return read;
+}
+
+size_t dump_contents(const unsigned char *bytes, const size_t len) {
+  size_t read = 0;
+  while (read < len) {
+    read += dump_content(&bytes[read], len - read);
   }
   return read;
 }
