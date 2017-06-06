@@ -72,16 +72,6 @@ void blist_concat(unsigned char *dest, struct blist *list) {
   }
 }
 
-// size_t blist_byteslen(struct blist *list) {
-//   struct blist *listp = list;
-//   size_t len = 0;
-//   while (listp != NULL) {
-//     len += listp->len;
-//     listp = listp->next;
-//   }
-//   return len;
-// }
-
 size_t blist_recv(int sd, struct blist **list) {
   *list = NULL;
   struct blist *listp = NULL;

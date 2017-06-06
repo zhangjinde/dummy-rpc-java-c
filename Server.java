@@ -25,7 +25,6 @@ public class Server {
     System.out.println(">>> accepted");
 
     BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-    // InputStreamReader reader = new InputStreamReader(socket.getInputStream());
 
     String command = reader.readLine();
     System.out.println("command : " + command);
