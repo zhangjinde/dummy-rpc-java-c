@@ -16,31 +16,53 @@ struct blist {
   struct blist *next;
 };
 
-void hexdump(const unsigned char *bytes, const size_t len) {
-  for (size_t i = 0; i < len; i += 8) {
-    const char rawtail = (char)fmin(i + 8, len);
-    for (size_t j = 0; j < 8; j++) {
-      if (i + j < len) {
-        printf("%02x ", bytes[i + j]);
-      } else {
-        printf("   ");
-      }
-    }
-    printf(" ");
-    for (size_t j = 0; j < rawtail - i; j++) {
-      printf("%c", bytes[i + j]);
-    }
-    printf("\n");
+void hexdump(char *desc, void *addr, int len) {
+  int i;
+  unsigned char buff[17];
+  unsigned char *pc = (unsigned char*)addr;
+  if (desc != NULL)
+    printf ("%s:\n", desc);
+  if (len == 0) {
+    printf("  ZERO LENGTH\n");
+    return;
   }
+  if (len < 0) {
+    printf("  NEGATIVE LENGTH: %i\n",len);
+    return;
+  }
+  for (i = 0; i < len; i++) {
+    if ((i % 16) == 0) {
+      if (i != 0)
+        printf ("  %s\n", buff);
+      printf ("  %04x ", i);
+    }
+    printf (" %02x", pc[i]);
+    if ((pc[i] < 0x20) || (pc[i] > 0x7e))
+      buff[i % 16] = '.';
+    else
+      buff[i % 16] = pc[i];
+    buff[(i % 16) + 1] = '\0';
+  }
+  while ((i % 16) != 0) {
+    printf ("   ");
+    i++;
+  }
+  printf ("  %s\n", buff);
+}
 
+struct blist *blist_append(struct blist *tail, const unsigned char *bytes, const size_t len) {
+  struct blist *new_one = malloc(sizeof(struct blist));
+  new_one->bytes = malloc(sizeof(unsigned char) * len);
+  memcpy(new_one->bytes, bytes, len);
+  new_one->len = len;
+  new_one->next = NULL;
+  if (tail != NULL) { // concat list if provided previous one
+    tail->next = new_one;
+  }
+  return new_one;
 }
 
 int main(int argc, char const *argv[]) {
-  // if (argc < 2) {
-  //   printf("need 1 arg\n");
-  //   return 1;
-  // }
-
   struct sockaddr_in addr;
   addr.sin_family = AF_INET;
   addr.sin_port = htons(PORT);
@@ -68,29 +90,15 @@ int main(int argc, char const *argv[]) {
       return 1;
     }
 
+    listp = blist_append(listp, buf, len);
     if (list == NULL) {
-      list = listp = malloc(sizeof(struct blist));
-    } else {
-      listp->next = malloc(sizeof(struct blist));
-      listp = listp->next;
+      list = listp;
     }
-    listp->bytes = malloc(sizeof(unsigned char) * len);
-    memcpy(listp->bytes, buf, len);
-    listp->len = len;
-    listp->next = NULL;
+
     byteslen += len;
-
-    // printf("received len : %d\n", len);
-
-    // for (size_t i = 0; i < len; i++) {
-    //   printf("%c", buf[i]);
-    // }
-    // printf("\n");
-    // for (size_t i = 0; i < len; i++) {
-    //   printf("%2x ", buf[i]);
-    // }
-    // printf("\n");
   }
+  free(buf);
+
 
   listp = list;
   unsigned char *bytes = malloc(sizeof(unsigned char) * byteslen);
@@ -102,9 +110,8 @@ int main(int argc, char const *argv[]) {
     listp = listp->next;
   }
 
-  hexdump(bytes, byteslen);
+  hexdump("received", bytes, byteslen);
 
-  free(buf);
   close(sd);
 
   return 0;
