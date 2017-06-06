@@ -1,4 +1,5 @@
-#pragma once
+#ifndef PARSER_H
+#define PARSER_H
 
 #define TC_NULL 0x70
 #define TC_REFERENCE 0x71
@@ -26,4 +27,8 @@
 #include <stdio.h>
 #include "descriptor.h"
 
-struct desc_class *parse(const unsigned char *bytes, const size_t len);
+struct inst parse(const unsigned char *bytes, const size_t len);
+size_t parse_object(struct inst *instance, const unsigned char *bytes, const size_t len);
+size_t parse_classDesc(struct class_t *clazz, const unsigned char *bytes, const size_t len);
+
+#endif /* end of include guard: PARSER_H */

@@ -1,13 +1,13 @@
 #include "hexdump.h"
 
-size_t hexdump(const char *desc, const unsigned char *pc, const size_t len) {
+void hexdump(const char *desc, const unsigned char *pc, const size_t len) {
   int i;
   unsigned char buff[17];
   if (desc != NULL)
     printf ("%s:\n", desc);
   if (len == 0) {
     printf("  ZERO LENGTH\n");
-    return 0;
+    return;
   }
   // if (len < 0) {
   //   printf("  NEGATIVE LENGTH: %i\n",len);
@@ -31,5 +31,4 @@ size_t hexdump(const char *desc, const unsigned char *pc, const size_t len) {
     i++;
   }
   printf ("  %s\n", buff);
-  return len;
 }

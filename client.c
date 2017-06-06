@@ -10,6 +10,7 @@
 
 #include "src/hexdump.h"
 #include "src/blist.h"
+#include "src/bytes.h"
 #include "src/parser.h"
 #include "src/descriptor.h"
 
@@ -28,21 +29,22 @@ int main(int argc, char const *argv[]) {
   const char* command = "fetch Task\n";
   send(sd, command, strlen(command), 0);
 
+  struct bytes_t bytes;
   struct blist *list;
-  size_t byteslen = blist_recv(sd, &list);
+  bytes.len = blist_recv(sd, &list);
 
-  if (byteslen == 0) {
+  if (bytes.len == 0) {
     close(sd);
     return 1;
   }
 
-  unsigned char *bytes = malloc(sizeof(unsigned char) * byteslen);
-  blist_concat(bytes, list);
+  bytes.head = malloc(sizeof(unsigned char) * bytes.len);
+  blist_concat(bytes.head, list);
   // TODO blist_free
 
-  hexdump("received", bytes, byteslen);
+  hexdump("received", bytes.head, bytes.len);
 
-  struct desc_class *desc = parse(bytes, byteslen);
+  struct inst obj = parse(bytes.head, bytes.len);
 
   close(sd);
 
