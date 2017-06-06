@@ -62,6 +62,52 @@ struct blist *blist_append(struct blist *tail, const unsigned char *bytes, const
   return new_one;
 }
 
+void blist_concat(unsigned char *dest, struct blist *list) {
+  struct blist *listp = list;
+  size_t lenp = 0;
+  while (listp != NULL) {
+    memcpy(&dest[lenp], listp->bytes, listp->len);
+    lenp += listp->len;
+    listp = listp->next;
+  }
+}
+
+// size_t blist_byteslen(struct blist *list) {
+//   struct blist *listp = list;
+//   size_t len = 0;
+//   while (listp != NULL) {
+//     len += listp->len;
+//     listp = listp->next;
+//   }
+//   return len;
+// }
+
+size_t blist_recv(int sd, struct blist **list) {
+  *list = NULL;
+  struct blist *listp = NULL;
+  size_t len_sum = 0;
+  int len;
+  unsigned char *buf = malloc(sizeof(unsigned char) * 64);
+
+  while ((len = recv(sd, buf, sizeof(buf), 0)) != 0) {
+    if (len < 0) {
+      free(buf);
+      printf("!!! recv error\n");
+      return 0;
+    }
+
+    listp = blist_append(listp, buf, len);
+    if (*list == NULL) {
+      *list = listp;
+    }
+
+    len_sum += len;
+  }
+  free(buf);
+
+  return len_sum;
+}
+
 int main(int argc, char const *argv[]) {
   struct sockaddr_in addr;
   addr.sin_family = AF_INET;
@@ -71,45 +117,19 @@ int main(int argc, char const *argv[]) {
   const int sd = socket(AF_INET, SOCK_STREAM, 0);
   connect(sd, (struct sockaddr*)&addr, sizeof(addr));
 
-  const char* requireServiceName = "Task";
-  int len = strlen(requireServiceName);
+  const char* command = "fetch Task\n";
+  send(sd, command, strlen(command), 0);
 
-  send(sd, &len, sizeof(len), 0);
-  send(sd, requireServiceName, len, 0);
+  struct blist *list;
+  size_t byteslen = blist_recv(sd, &list);
 
-  unsigned char *buf = malloc(sizeof(unsigned char) * 64);
-
-  struct blist *list = NULL, *listp = NULL;
-  size_t byteslen = 0;
-
-  while ((len = recv(sd, buf, sizeof(buf), 0)) != 0) {
-    if (len < 0) {
-      free(buf);
-      close(sd);
-      printf("!!! recv error\n");
-      return 1;
-    }
-
-    listp = blist_append(listp, buf, len);
-    if (list == NULL) {
-      list = listp;
-    }
-
-    byteslen += len;
+  if (byteslen == 0) {
+    close(sd);
+    return 1;
   }
-  free(buf);
 
-
-  listp = list;
   unsigned char *bytes = malloc(sizeof(unsigned char) * byteslen);
-  size_t lenp = 0;
-
-  while (listp != NULL) {
-    memcpy(&bytes[lenp], listp->bytes, listp->len);
-    lenp += listp->len;
-    listp = listp->next;
-  }
-
+  blist_concat(bytes, list);
   hexdump("received", bytes, byteslen);
 
   close(sd);

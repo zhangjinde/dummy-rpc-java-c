@@ -1,5 +1,6 @@
 import java.io.*;
 import java.net.*;
+import java.util.*;
 
 public class Server {
   private static int PORT = 8100;
@@ -23,17 +24,15 @@ public class Server {
   private void accept(Socket socket) throws IOException {
     System.out.println(">>> accepted");
 
-    // BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-    InputStreamReader reader = new InputStreamReader(socket.getInputStream());
+    BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+    // InputStreamReader reader = new InputStreamReader(socket.getInputStream());
 
-    int serviceNameLength = reader.read();
-    System.out.println("len : " + serviceNameLength);
+    String command = reader.readLine();
+    System.out.println("command : " + command);
+    Iterator commands = Arrays.asList(command.split(" ")).iterator();
+    System.out.println("command 1 : " + commands.next());
 
-
-    char[] serviceName = new char[serviceNameLength];
-    reader.read(serviceName, 0, serviceNameLength);
-
-    System.out.println(serviceName);
+    // TODO コマンドで分岐する
 
     // TODO ハッシュから取り出す
     ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
