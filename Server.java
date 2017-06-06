@@ -37,9 +37,7 @@ public class Server {
 
     // TODO ハッシュから取り出す
     ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
-    System.out.println("created oos");
-    oos.writeObject(new Task());
-
+    oos.writeObject(task);
 
 
     // flush(reader);
