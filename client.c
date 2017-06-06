@@ -10,6 +10,8 @@
 
 #include "src/hexdump.h"
 #include "src/blist.h"
+#include "src/parser.h"
+#include "src/descriptor.h"
 
 #define PORT 8100
 
@@ -39,6 +41,7 @@ int main(int argc, char const *argv[]) {
   hexdump("received", bytes, byteslen);
 
   // dump(bytes, byteslen);
+  struct desc_class *desc = parse(bytes, byteslen);
 
   close(sd);
 
