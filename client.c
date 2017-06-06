@@ -38,9 +38,10 @@ int main(int argc, char const *argv[]) {
 
   unsigned char *bytes = malloc(sizeof(unsigned char) * byteslen);
   blist_concat(bytes, list);
+  // TODO blist_free
+
   hexdump("received", bytes, byteslen);
 
-  // dump(bytes, byteslen);
   struct desc_class *desc = parse(bytes, byteslen);
 
   close(sd);
