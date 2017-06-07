@@ -127,6 +127,7 @@ size_t parse_newClassDesc(struct class_t *clazz, const unsigned char *bytes, con
     read += parse_className(&clazz->name, &bytes[read]);
     read += parse_serialVersionUID(&clazz->uid, &bytes[read]);
     // TODO newHandle
+    printf("newHandle\n");
     read += parse_classDescInfo(clazz, &bytes[read], len - read);
     break;
   case TC_PROXYCLASSDESC:
@@ -167,7 +168,8 @@ size_t parse_newObject(struct inst **instance_, const unsigned char *bytes, cons
 
   size_t read = 1;
   read += parse_classDesc(&instance->u.object.clazz, &bytes[read], len - read);
-  // newHandle
+  // TODO newHandle
+  printf("newHandle\n");
   read += parse_classdata(&instance->u.object, &bytes[read], len - read);
   return read;
 }
@@ -181,11 +183,13 @@ size_t parse_newString(struct inst **instance_, const unsigned char *bytes, cons
   size_t read = 1;
   switch (bytes[0]) {
     case TC_STRING:
-      // newHandle
+      // TODO newHandle
+      printf("newHandle\n");
       read += parse_utf(&instance->u.str, &bytes[read]);
       break;
     case TC_LONGSTRING:
-      // newHandle
+      // TODO newHandle
+      printf("newHandle\n");
       printf("not implemented (newString TC_LONGSTRING)\n");
       break;
   }
