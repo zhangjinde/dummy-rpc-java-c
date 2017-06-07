@@ -31,8 +31,7 @@ size_t parse_classdata(struct object_t *object, const unsigned char *bytes, cons
 }
 
 size_t parse_className1(struct inst **instance, const unsigned char *bytes, const size_t len) {
-  *instance = malloc(sizeof(struct inst));
-  return parse_object(*instance, bytes, len);
+  return parse_object(instance, bytes, len);
 }
 
 size_t parse_fieldName(char **dest, const unsigned char *bytes) {
@@ -157,22 +156,26 @@ size_t parse_classDesc(struct class_t *clazz, const unsigned char *bytes, const 
   return 0;
 }
 
-size_t parse_newObject(struct object_t *object, const unsigned char *bytes, const size_t len) {
+size_t parse_newObject(struct inst **instance_, const unsigned char *bytes, const size_t len) {
   size_t read = 0;
+  struct inst *instance = *instance_ = malloc(sizeof(struct inst));
+  instance->type = TC_OBJECT;
   hexdump("newObject TC_OBJECT", &bytes[read++], 1);
   // obj.clazz = parse_classDesc(&bytes[1], len - 1);
-  read += parse_classDesc(&object->clazz, &bytes[read], len - read);
+  read += parse_classDesc(&instance->u.object.clazz, &bytes[read], len - read);
   // newHandle
-  read += parse_classdata(object, &bytes[read], len - read);
+  read += parse_classdata(&instance->u.object, &bytes[read], len - read);
   return read;
 }
 
-size_t parse_newString(char **str, const unsigned char *bytes, const size_t len) {
+size_t parse_newString(struct inst **instance_, const unsigned char *bytes, const size_t len) {
   size_t read = 0;
+  struct inst *instance = *instance_ = malloc(sizeof(struct inst));
+  instance->type = TC_STRING;
   switch (bytes[read++]) {
     case TC_STRING:
       // newHandle
-      read += parse_utf(str, &bytes[read]);
+      read += parse_utf(&instance->u.str, &bytes[read]);
       break;
     case TC_LONGSTRING:
       // newHandle
@@ -182,27 +185,26 @@ size_t parse_newString(char **str, const unsigned char *bytes, const size_t len)
   return read;
 }
 
-size_t parse_prevObject(struct inst *instance, const unsigned char *bytes, const size_t len) {
+size_t parse_prevObject(struct inst **instance, const unsigned char *bytes, const size_t len) {
   size_t read = 0;
   hexdump("prevObject TC_REFERENCE", &bytes[read++], 1);
   hexdump("prevObject handle", &bytes[read], 4);
   printf("not implemented (prevObject TC_REFERENCE)\n");
+  // TODO handle list から探して*instanceに参照させる
   return read + 4;
 }
 
-size_t parse_object(struct inst *instance, const unsigned char *bytes, const size_t len) {
+size_t parse_object(struct inst **instance, const unsigned char *bytes, const size_t len) {
   size_t read = 0;
   switch (bytes[0]) {
   case TC_OBJECT:
-    instance->type = TC_OBJECT;
-    read += parse_newObject(&instance->u.object, bytes, len);
+    read += parse_newObject(instance, bytes, len);
     break;
   case TC_REFERENCE:
     read += parse_prevObject(instance, bytes, len);
     break;
   case TC_STRING:
-    instance->type = TC_STRING;
-    read += parse_newString(&instance->u.str, bytes, len);
+    read += parse_newString(instance, bytes, len);
     break;
   default:
     printf("not implemented (object: 0x%02x)\n", bytes[0]);
@@ -216,8 +218,8 @@ struct inst parse(const unsigned char *bytes, const size_t len) {
   hexdump("version", &bytes[2], 2);
 
   // ほんとうならここは parse_contents だが今回はショートカット
-  struct inst instance;
+  struct inst *instance;
   parse_object(&instance, &bytes[4], len - 4);
 
-  return instance;
+  return *instance;
 }
