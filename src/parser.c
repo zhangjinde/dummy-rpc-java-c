@@ -21,6 +21,7 @@ char *newnstr(const unsigned char *bytes, const size_t len) {
 size_t parse_utf(char **dest, const unsigned char *bytes) {
   const size_t len = (bytes[0] << BYTE) + bytes[1];
   *dest = newnstr(&bytes[2], len);
+  hexdump("utf", &bytes[2], len);
   return 2 + len;
 }
 
@@ -127,8 +128,10 @@ size_t parse_newClassDesc(struct class_t *clazz, const unsigned char *bytes, con
     read += parse_serialVersionUID(&clazz->uid, &bytes[read]);
     // TODO newHandle
     read += parse_classDescInfo(clazz, &bytes[read], len - read);
+    break;
   case TC_PROXYCLASSDESC:
     printf("not implemented (newClassDesc: %02x)\n", bytes[0]);
+    break;
   }
   return read;
 }
@@ -157,11 +160,12 @@ size_t parse_classDesc(struct class_t *clazz, const unsigned char *bytes, const 
 }
 
 size_t parse_newObject(struct inst **instance_, const unsigned char *bytes, const size_t len) {
-  size_t read = 0;
   struct inst *instance = *instance_ = malloc(sizeof(struct inst));
+
   instance->type = TC_OBJECT;
-  hexdump("newObject TC_OBJECT", &bytes[read++], 1);
-  // obj.clazz = parse_classDesc(&bytes[1], len - 1);
+  hexdump("newObject TC_OBJECT", &bytes[0], 1);
+
+  size_t read = 1;
   read += parse_classDesc(&instance->u.object.clazz, &bytes[read], len - read);
   // newHandle
   read += parse_classdata(&instance->u.object, &bytes[read], len - read);
@@ -169,10 +173,13 @@ size_t parse_newObject(struct inst **instance_, const unsigned char *bytes, cons
 }
 
 size_t parse_newString(struct inst **instance_, const unsigned char *bytes, const size_t len) {
-  size_t read = 0;
   struct inst *instance = *instance_ = malloc(sizeof(struct inst));
+
   instance->type = TC_STRING;
-  switch (bytes[read++]) {
+  hexdump("newString TC_STRING", &bytes[0], 1);
+
+  size_t read = 1;
+  switch (bytes[0]) {
     case TC_STRING:
       // newHandle
       read += parse_utf(&instance->u.str, &bytes[read]);
