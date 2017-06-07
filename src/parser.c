@@ -8,7 +8,6 @@
 #include "descriptor.h"
 #include "hexdump.h"
 
-#define BYTE 8
 #define SERIAL_VERSION_UID_SIZE 8
 
 char *newnstr(const unsigned char *bytes, const size_t len) {
@@ -60,6 +59,7 @@ size_t parse_fieldDesc(struct field_t *field, const unsigned char *bytes, const 
       read += parse_className1(&field->class_name, &bytes[read], len - read);
       break;
   }
+  hexdump("field", bytes, read);
   return read;
 }
 
@@ -73,6 +73,7 @@ size_t parse_fields(struct class_t *clazz, const unsigned char *bytes, const siz
     read += parse_fieldDesc(field, &bytes[read], len - read);
     append_class_field(clazz, field);
   }
+  hexdump("fields", bytes, read);
   return read;
 }
 
@@ -82,7 +83,7 @@ size_t parse_classDescFlags(unsigned char *dest, const unsigned char *bytes) {
 }
 
 size_t parse_endBlockData(const unsigned char *bytes) {
-  hexdump("classAnnocation TC_ENDBLOCKDATA", bytes, 1);
+  hexdump("classAnnotation TC_ENDBLOCKDATA", bytes, 1);
   return 1;
 }
 
@@ -98,6 +99,7 @@ size_t parse_superClassDesc(const unsigned char *bytes, const size_t len) {
 }
 
 size_t parse_classDescInfo(struct class_t *clazz, const unsigned char *bytes, const size_t len) {
+  printf("classDescInfo %x\n", bytes[0]);
   size_t read = 0;
   read += parse_classDescFlags(&clazz->flag, &bytes[read]);
   read += parse_fields(clazz, &bytes[read], len - read);
@@ -126,8 +128,8 @@ size_t parse_newClassDesc(struct class_t *clazz, const unsigned char *bytes, con
     hexdump("newClassDesc TC_CLASSDESC", &bytes[read++], 1);
     read += parse_className(&clazz->name, &bytes[read]);
     read += parse_serialVersionUID(&clazz->uid, &bytes[read]);
-    // TODO newHandle
-    printf("newHandle\n");
+    unsigned short handle = newHandle_class(clazz);
+    printf("newHandle %x\n", handle);
     read += parse_classDescInfo(clazz, &bytes[read], len - read);
     break;
   case TC_PROXYCLASSDESC:
@@ -168,8 +170,8 @@ size_t parse_newObject(struct inst **instance_, const unsigned char *bytes, cons
 
   size_t read = 1;
   read += parse_classDesc(&instance->u.object.clazz, &bytes[read], len - read);
-  // TODO newHandle
-  printf("newHandle\n");
+  unsigned short handle = newHandle_inst(instance);
+  printf("newHandle %x\n", handle);
   read += parse_classdata(&instance->u.object, &bytes[read], len - read);
   return read;
 }
@@ -180,29 +182,42 @@ size_t parse_newString(struct inst **instance_, const unsigned char *bytes, cons
   instance->type = TC_STRING;
   hexdump("newString TC_STRING", &bytes[0], 1);
 
+  unsigned short handle;
+
   size_t read = 1;
   switch (bytes[0]) {
     case TC_STRING:
-      // TODO newHandle
-      printf("newHandle\n");
+      handle = newHandle_inst(instance);
+      printf("newHandle %x\n", handle);
       read += parse_utf(&instance->u.str, &bytes[read]);
       break;
     case TC_LONGSTRING:
-      // TODO newHandle
-      printf("newHandle\n");
+      // newHandle
       printf("not implemented (newString TC_LONGSTRING)\n");
       break;
   }
   return read;
 }
 
+size_t parse_handle(struct handle_t **handle, const unsigned char *bytes) {
+  unsigned int index = 0;
+  for (size_t i = 0; i < 4; i++) {
+    index <<= BYTE;
+    index += bytes[i];
+  }
+  printf("handle %x\n", index);
+  *handle = get_handle(index);
+  return 4;
+}
+
 size_t parse_prevObject(struct inst **instance, const unsigned char *bytes, const size_t len) {
-  size_t read = 0;
-  hexdump("prevObject TC_REFERENCE", &bytes[read++], 1);
-  hexdump("prevObject handle", &bytes[read], 4);
-  printf("not implemented (prevObject TC_REFERENCE)\n");
-  // TODO handle list から探して*instanceに参照させる
-  return read + 4;
+  hexdump("prevObject TC_REFERENCE", &bytes[0], 1);
+
+  size_t read = 1;
+  struct handle_t *handle;
+  read += parse_handle(&handle, &bytes[1]);
+  *instance = handle->u.instance;
+  return read;
 }
 
 size_t parse_object(struct inst **instance, const unsigned char *bytes, const size_t len) {
