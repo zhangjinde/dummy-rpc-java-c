@@ -35,7 +35,6 @@ public class Server {
     ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
     oos.writeObject(task);
 
-
     // flush(reader);
   }
 

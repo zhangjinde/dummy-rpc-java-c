@@ -3,6 +3,9 @@
 
 #include "bytes.h"
 
+#define STREAM_MAGIC 0xaced
+#define STREAM_VERSION 5
+
 #define TC_NULL 0x70
 #define TC_REFERENCE 0x71
 #define TC_CLASSDESC 0x72
@@ -24,6 +27,8 @@
 #define SC_SERIALIZABLE 0x02
 #define SC_EXTERNALIZABLE 0x04
 #define SC_ENUM 0x10
+
+#define UTF_HEADER_SIZE 2
 
 #define BYTE 8
 

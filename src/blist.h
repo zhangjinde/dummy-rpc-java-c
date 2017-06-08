@@ -23,5 +23,6 @@ void blist_push(struct blist *list, struct bytes_t bytes);
 struct bytes_t blist_concat(struct blist list);
 size_t blist_recv(int sd, struct blist *list);
 void blist_free(struct blist list);
+void blist_preview(struct blist list);
 
 #endif /* end of include guard: BLIST_H */

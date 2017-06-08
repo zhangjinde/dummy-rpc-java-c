@@ -26,10 +26,15 @@ size_t read_bytes_4(int *dest, const unsigned char *bytes) {
 }
 
 size_t parse_utf(char **dest, const unsigned char *bytes) {
-  const size_t len = (bytes[0] << BYTE) + bytes[1];
-  *dest = newnstr(&bytes[2], len);
-  hexdump("utf", &bytes[2], len);
-  return 2 + len;
+  // const size_t len = (bytes[0] << BYTE) + bytes[1];
+  size_t len = 0;
+  for (size_t i = 0; i < UTF_HEADER_SIZE; i++) {
+    len <<= BYTE;
+    len += bytes[i];
+  }
+  *dest = newnstr(&bytes[UTF_HEADER_SIZE], len);
+  hexdump("utf", &bytes[UTF_HEADER_SIZE], len);
+  return UTF_HEADER_SIZE + len;
 }
 
 size_t parse_classdata(struct object_t *object, const unsigned char *bytes, const size_t len) {

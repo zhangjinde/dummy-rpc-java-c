@@ -101,3 +101,11 @@ void blist_free(struct blist list) {
   }
   list.head = NULL;
 }
+
+void blist_preview(struct blist list) {
+  struct blist_element_t *e = list.head;
+  while (e != NULL) {
+    hexdump("blist_preview", e->bytes.head, e->bytes.len);
+    e = e->next;
+  }
+}
