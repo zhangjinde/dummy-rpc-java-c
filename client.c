@@ -45,15 +45,15 @@ int main(int argc, char const *argv[]) {
   struct bytes_t bytes;
   struct blist *list;
   bytes.len = blist_recv(sd, &list);
+  close(sd);
 
   if (bytes.len == 0) {
-    close(sd);
     return 1;
   }
 
   bytes.head = malloc(sizeof(unsigned char) * bytes.len);
   blist_concat(bytes.head, list);
-  // TODO blist_free
+  blist_free(list);
 
   hexdump("received", bytes.head, bytes.len);
 
@@ -63,10 +63,11 @@ int main(int argc, char const *argv[]) {
   preview_task(task);
   struct person_t person = person_from_task(task);
   preview_person(person);
+
+  // TODO taskのhelloを呼ぶようにする
   struct inst instance_person = inter_serialize_person(person);
   struct bytes_t serial = serialize(instance_person);
 
-  close(sd);
 
   return 0;
 }

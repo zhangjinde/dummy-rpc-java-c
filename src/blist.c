@@ -3,6 +3,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <string.h>
 #include "blist.h"
 
 struct blist *blist_append(struct blist *tail, const unsigned char *bytes, const size_t len) {
@@ -51,4 +52,11 @@ size_t blist_recv(int sd, struct blist **list) {
   free(buf);
 
   return len_sum;
+}
+
+void blist_free(struct blist *list) {
+  while (list != NULL) {
+    free(list->bytes);
+    list = list->next;
+  }
 }
