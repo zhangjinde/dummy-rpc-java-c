@@ -5,16 +5,14 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include "blist.h"
+#include "hexdump.h"
 
-struct blist *blist_append(struct blist *tail, const unsigned char *bytes, const size_t len) {
+struct blist *blist_push(struct blist *list, const unsigned char *bytes, const size_t len) {
   struct blist *new_one = malloc(sizeof(struct blist));
   new_one->bytes.head = malloc(sizeof(char) * len);
   memcpy(new_one->bytes.head, bytes, len);
   new_one->bytes.len = len;
-  new_one->next = NULL;
-  if (tail != NULL) { // concat list if provided previous one
-    tail->next = new_one;
-  }
+  new_one->next = list;
   return new_one;
 }
 
@@ -30,7 +28,7 @@ struct bytes_t blist_concat(struct blist *list, size_t total_len) {
   size_t read = 0;
 
   while (list != NULL) {
-    memcpy(&bytes.head[read], list->bytes.head, list->bytes.len);
+    memcpy(&bytes.head[total_len - read - list->bytes.len], list->bytes.head, list->bytes.len);
     read += list->bytes.len;
     list = list->next;
   }
@@ -40,7 +38,6 @@ struct bytes_t blist_concat(struct blist *list, size_t total_len) {
 
 size_t blist_recv(int sd, struct blist **list) {
   *list = NULL;
-  struct blist *listp = NULL;
   size_t len_sum = 0;
   int len;
   unsigned char *buf = malloc(sizeof(unsigned char) * 64);
@@ -52,10 +49,7 @@ size_t blist_recv(int sd, struct blist **list) {
       return 0;
     }
 
-    listp = blist_append(listp, buf, len);
-    if (*list == NULL) {
-      *list = listp;
-    }
+    *list = blist_push(*list, buf, len);
 
     len_sum += len;
   }
