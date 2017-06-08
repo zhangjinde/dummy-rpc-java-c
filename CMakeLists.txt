@@ -12,4 +12,5 @@ add_executable(client
   src/task.c
   src/person.c
   src/serializer.c
+  src/net.c
 )
