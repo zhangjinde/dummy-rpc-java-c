@@ -11,4 +11,5 @@ add_executable(client
   src/strutil.c
   src/task.c
   src/person.c
+  src/serializer.c
 )

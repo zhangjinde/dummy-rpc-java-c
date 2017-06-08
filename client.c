@@ -15,6 +15,7 @@
 #include "src/descriptor.h"
 #include "src/task.h"
 #include "src/person.h"
+#include "src/serializer.h"
 
 #define PORT 8100
 
@@ -63,7 +64,7 @@ int main(int argc, char const *argv[]) {
   struct person_t person = person_from_task(task);
   preview_person(person);
   struct inst instance_person = inter_serialize_person(person);
-
+  struct bytes_t serial = serialize(instance_person);
 
   close(sd);
 
