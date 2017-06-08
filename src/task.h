@@ -4,6 +4,8 @@
 #include "person.h"
 #include "descriptor.h"
 
+#define TASK_T_SERIAL_VERSION 0x8877665544332211
+
 struct task_t {
   int v;
   char *str1;

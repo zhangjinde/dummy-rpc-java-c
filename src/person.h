@@ -1,6 +1,8 @@
 #ifndef PERSON_H
 #define PERSON_H
 
+#define PERSON_T_SERIAL_VERSION 0x1122334455667788
+
 struct person_t {
   char *name;
 };

@@ -1,8 +1,11 @@
 #include <string.h>
 #include "task.h"
 
+
+
 struct task_t cast_task(struct inst instance) {
   struct task_t task = new_task();
+  // TODO 本来ならここでserialVersionUIDの比較を行う
   struct field_t *field = instance.u.object.clazz.field;
   struct classdata_t *classdata = instance.u.object.classdata;
   // field と classdata の順番は対応している
