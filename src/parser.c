@@ -18,6 +18,7 @@ size_t read_bytes_1(char *dest, const unsigned char *bytes) {
 
 size_t read_bytes_4(int *dest, const unsigned char *bytes) {
   size_t size = 4;
+  *dest = 0;
   for (size_t i = 0; i < size; i++) {
     *dest <<= BYTE;
     *dest += bytes[i];
@@ -39,6 +40,7 @@ size_t parse_utf(char **dest, const unsigned char *bytes) {
 
 size_t parse_classdata(struct object_t *object, const unsigned char *bytes, const size_t len) {
   struct class_t *clazz = &object->clazz;
+  object->classdata = NULL;
 
   size_t read = 0;
   struct field_t *field = clazz->field;
@@ -180,6 +182,7 @@ size_t parse_newClassDesc(struct class_t *clazz, const unsigned char *bytes, con
     printf("not implemented (newClassDesc: TC_PROXYCLASSDESC)\n");
     break;
   }
+  hexdump("newClassDesc (read)", bytes, read);
   return read;
 }
 
