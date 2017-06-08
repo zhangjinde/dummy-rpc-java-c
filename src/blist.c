@@ -14,14 +14,22 @@ struct blist new_blist() {
   return list;
 }
 
-void blist_push(struct blist *list, const unsigned char *bytes, const size_t len) {
+// cp
+void blist_push_cp(struct blist *list, const struct bytes_t bytes) {
+  struct bytes_t copied_bytes;
+  copied_bytes.head = malloc(sizeof(char) * bytes.len);
+  memcpy(copied_bytes.head, bytes.head, bytes.len);
+  copied_bytes.len = bytes.len;
+  blist_push(list, copied_bytes);
+}
+
+// mv
+void blist_push(struct blist *list, const struct bytes_t bytes) {
   struct blist_element_t *new_elem = malloc(sizeof(struct blist_element_t));
-  new_elem->bytes.head = malloc(sizeof(char) * len);
-  memcpy(new_elem->bytes.head, bytes, len);
-  new_elem->bytes.len = len;
+  new_elem->bytes = bytes;
   new_elem->next = list->head;
   list->head = new_elem;
-  list->len += len;
+  list->len += bytes.len;
 }
 
 struct bytes_t blist_concat(struct blist list) {
@@ -55,7 +63,10 @@ size_t blist_recv(int sd, struct blist *list) {
       return 0;
     }
 
-    blist_push(list, buf, len);
+    struct bytes_t bytes;
+    bytes.head = buf;
+    bytes.len = len;
+    blist_push_cp(list, bytes);
 
     len_sum += len;
   }

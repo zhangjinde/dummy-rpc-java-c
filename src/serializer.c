@@ -3,5 +3,10 @@
 
 struct bytes_t serialize(struct inst instance) {
   struct blist list = new_blist();
-  return blist_concat(list);
+
+
+
+  struct bytes_t ret = blist_concat(list);
+  blist_free(list);
+  return ret;
 }

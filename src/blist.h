@@ -16,7 +16,7 @@ struct blist {
 };
 
 struct blist new_blist();
-void blist_push(struct blist *list, const unsigned char *bytes, const size_t len);
+void blist_push(struct blist *list, const struct bytes_t bytes);
 struct bytes_t blist_concat(struct blist list);
 size_t blist_recv(int sd, struct blist *list);
 void blist_free(struct blist list);
