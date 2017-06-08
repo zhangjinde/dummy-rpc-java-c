@@ -1,7 +1,5 @@
 #include <string.h>
 #include "serializer.h"
-#include "blist.h"
-#include "descriptor.h"
 #include "hexdump.h"
 
 struct bytes_t bytes_from_char(unsigned char from) {
@@ -51,7 +49,7 @@ void serialize_utf(struct blist *list, const char *str) {
   blist_push(list, bytes_from_string(str));
 }
 
-void serialize_className(struct blist *list, const char* name) {
+void serialize_className(struct blist *list, const char *name) {
   serialize_utf(list, name);
 }
 
@@ -63,11 +61,69 @@ void serialize_classDescFlags(struct blist *list, unsigned char flag) {
   blist_push(list, bytes_from_char(flag));
 }
 
+void serialize_fieldName(struct blist *list, const char *name) {
+  serialize_utf(list, name);
+}
+
+void serialize_className1(struct blist *list, const struct inst *class_name) {
+  serialize_object(list, class_name);
+}
+
+void serialize_fieldDesc(struct blist *list, const struct field_t *field) {
+  blist_push(list, bytes_from_char(field->type));
+  switch (field->type) {
+  // case 'B':	// byte
+  // case 'C':	// char
+  // case 'D':	// double
+  // case 'F':	// float
+  // case 'I':	// integer
+  // case 'J':	// long
+  // case 'S':	// short
+  // case 'Z':	// boolean
+  // case '[':	// array
+  case 'L':	// object
+    serialize_fieldName(list, field->name);
+    serialize_className1(list, field->class_name);
+    break;
+  }
+
+}
+
+void serialize_fields(struct blist *list, const struct class_t *clazz) {
+  unsigned short fields_len = 0;
+  struct field_t *f = clazz->field;
+  while (f != NULL) {
+    fields_len++;
+    f = f->next;
+  }
+  blist_push(list, bytes_from_short(fields_len));
+
+  f = clazz->field;
+  for (size_t i = 0; i < fields_len; i++) {
+    serialize_fieldDesc(list, f);
+    f = f->next;
+  }
+}
+
+void serialize_endBlockData(struct blist *list) {
+  blist_push(list, bytes_from_char(TC_ENDBLOCKDATA));
+}
+
+void serialize_classAnnotation(struct blist *list) {
+  // contents endBlockData
+  // 今回はcontentsを省略
+  serialize_endBlockData(list);
+}
+
+void serialize_superClassDesc(struct blist *list, const struct class_t *clazz) {
+  serialize_classDesc(list, clazz);
+}
+
 void serialize_classDescInfo(struct blist *list, const struct class_t *clazz) {
   serialize_classDescFlags(list, clazz->flag);
-  // TODO fields
-  // TODO classAnnotation
-  // TODO superClassDesc
+  serialize_fields(list, clazz);
+  serialize_classAnnotation(list);
+  serialize_superClassDesc(list, NULL); // 今回はsuper classはなし
 }
 
 void serialize_newClassDesc(struct blist *list, const struct class_t *clazz) {
@@ -98,6 +154,20 @@ void serialize_newObject(struct blist *list, const struct inst *instance) {
   // TODO classdata
 }
 
+void serialize_newString(struct blist *list, const struct inst *instance) {
+  blist_push(list, bytes_from_char(instance->type));
+
+  switch (instance->type) {
+  case TC_STRING:
+    // TODO newHandle
+    serialize_utf(list, instance->u.str);
+    break;
+  case TC_LONGSTRING:
+    printf("not implemented (newString TC_LONGSTRING)\n");
+    break;
+  }
+}
+
 void serialize_object(struct blist *list, const struct inst *instance) {
   switch (instance->type) {
   case TC_OBJECT:
@@ -107,7 +177,7 @@ void serialize_object(struct blist *list, const struct inst *instance) {
   //   break;
     // TODO ほんとうはhandleを考慮する必要があるが・・・多分なくても動くっちゃ動く．
   case TC_STRING:
-    // TODO newString
+    serialize_newString(list, instance);
     break;
   default:
     printf("not implemented (object: 0x%02x)\n", instance->type);
