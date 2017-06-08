@@ -22,11 +22,6 @@ struct class_t {
   struct field_t *field;
 };
 
-struct classdata_t {
-  struct bytes_t bytes;
-  struct classdata_t *next;
-};
-
 struct object_t {
   struct class_t clazz;
   struct classdata_t *classdata;
@@ -38,6 +33,22 @@ struct inst {
     struct object_t object;
     char *str;
   } u;
+};
+
+struct classdata_t {
+  union {
+    char b;
+    char c;
+    double d;
+    float f;
+    int i;
+    long j;
+    short s;
+    char z;
+    struct inst *arr;
+    struct inst *obj;
+  };
+  struct classdata_t *next;
 };
 
 struct handle_t {
@@ -52,6 +63,7 @@ struct handle_t *get_handle(unsigned int handle);
 unsigned int newHandle_class(struct class_t *clazz);
 unsigned int newHandle_inst(struct inst *instance);
 void append_class_field(struct class_t *, struct field_t *);
+void append_object_classdata(struct object_t *, struct classdata_t *);
 void class_preview(struct class_t *);
 
 

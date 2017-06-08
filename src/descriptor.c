@@ -41,6 +41,20 @@ void append_class_field(struct class_t *clazz, struct field_t *field) {
   }
 }
 
+void append_object_classdata(struct object_t *object, struct classdata_t *classdata) {
+  classdata->next = NULL;
+  if (object->classdata == NULL) {
+    object->classdata = classdata;
+  } else {
+    struct classdata_t *c = object->classdata;
+    while (c->next != NULL) {
+      c = c->next;
+    }
+    c->next = classdata;
+  }
+}
+
+
 void class_preview(struct class_t *clazz) {
   puts("dclass_preview");
   printf("name: %s\n", clazz->name);

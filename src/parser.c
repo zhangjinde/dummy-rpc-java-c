@@ -17,6 +17,20 @@ char *newnstr(const unsigned char *bytes, const size_t len) {
   return ret;
 }
 
+size_t read_bytes_1(char *dest, const unsigned char *bytes) {
+  *dest = bytes[0];
+  return 1;
+}
+
+size_t read_bytes_4(int *dest, const unsigned char *bytes) {
+  size_t size = 4;
+  for (size_t i = 0; i < size; i++) {
+    *dest <<= BYTE;
+    *dest += bytes[i];
+  }
+  return size;
+}
+
 size_t parse_utf(char **dest, const unsigned char *bytes) {
   const size_t len = (bytes[0] << BYTE) + bytes[1];
   *dest = newnstr(&bytes[2], len);
@@ -26,8 +40,39 @@ size_t parse_utf(char **dest, const unsigned char *bytes) {
 
 size_t parse_classdata(struct object_t *object, const unsigned char *bytes, const size_t len) {
   struct class_t *clazz = &object->clazz;
-  hexdump("classdata", bytes, len);
-  return len;
+
+  size_t read = 0;
+  struct field_t *field = clazz->field;
+  while (field != NULL) {
+    struct classdata_t *classdata = malloc(sizeof(struct classdata_t));
+
+    switch (field->type) {
+    case 'B':	// byte
+      read += read_bytes_1(&classdata->b, &bytes[read]);
+      break;
+    // case 'C':	// char
+    // case 'D':	// double
+    // case 'F':	// float
+    case 'I':	// integer
+      read += read_bytes_4(&classdata->i, &bytes[read]);
+      break;
+    // case 'J':	// long
+    // case 'S':	// short
+    // case 'Z':	// boolean
+    // case '[':	// array
+    case 'L':	// object
+      read += parse_object(&classdata->obj, &bytes[read], len - read);
+      break;
+    default:
+      printf("not implemented (classdata type %c)\n", field->type);
+    }
+
+    append_object_classdata(object, classdata);
+    field = field->next;
+  }
+
+  hexdump("classdata (read)", bytes, read);
+  return read;
 }
 
 size_t parse_className1(struct inst **instance, const unsigned char *bytes, const size_t len) {
@@ -59,7 +104,7 @@ size_t parse_fieldDesc(struct field_t *field, const unsigned char *bytes, const 
       read += parse_className1(&field->class_name, &bytes[read], len - read);
       break;
   }
-  hexdump("field", bytes, read);
+  hexdump("field (read)", bytes, read);
   return read;
 }
 
@@ -73,7 +118,7 @@ size_t parse_fields(struct class_t *clazz, const unsigned char *bytes, const siz
     read += parse_fieldDesc(field, &bytes[read], len - read);
     append_class_field(clazz, field);
   }
-  hexdump("fields", bytes, read);
+  hexdump("fields (read)", bytes, read);
   return read;
 }
 
@@ -133,7 +178,7 @@ size_t parse_newClassDesc(struct class_t *clazz, const unsigned char *bytes, con
     read += parse_classDescInfo(clazz, &bytes[read], len - read);
     break;
   case TC_PROXYCLASSDESC:
-    printf("not implemented (newClassDesc: %02x)\n", bytes[0]);
+    printf("not implemented (newClassDesc: TC_PROXYCLASSDESC)\n");
     break;
   }
   return read;
@@ -154,6 +199,7 @@ size_t parse_classDesc(struct class_t *clazz, const unsigned char *bytes, const 
     return parse_nullRefernce(bytes);
     break;
   case TC_REFERENCE:
+    printf("not implemented (classDesc: TC_REFERENCE)\n");
     break;
   default:
     printf("not implemented (classDesc: %02x)\n", bytes[0]);
@@ -239,13 +285,18 @@ size_t parse_object(struct inst **instance, const unsigned char *bytes, const si
 }
 
 struct inst parse(const unsigned char *bytes, const size_t len) {
+  size_t read = 0;
 
-  hexdump("magic", &bytes[0], 2);
-  hexdump("version", &bytes[2], 2);
+  hexdump("magic", &bytes[read], 2);
+  read += 2;
+  hexdump("version", &bytes[read], 2);
+  read += 2;
 
   // ほんとうならここは parse_contents だが今回はショートカット
   struct inst *instance;
-  parse_object(&instance, &bytes[4], len - 4);
+  read += parse_object(&instance, &bytes[read], len - read);
+
+  printf("len: %ld, read: %ld\n", len, read);
 
   return *instance;
 }
