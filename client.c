@@ -42,23 +42,20 @@ int main(int argc, char const *argv[]) {
   const char* command = "fetch Task\n";
   send(sd, command, strlen(command), 0);
 
-  struct bytes_t bytes;
   struct blist *list;
-  bytes.len = blist_recv(sd, &list);
+  size_t received_len = blist_recv(sd, &list);
   close(sd);
-
-  if (bytes.len == 0) {
+  if (received_len == 0) {
     return 1;
   }
 
-  bytes.head = malloc(sizeof(unsigned char) * bytes.len);
-  blist_concat(bytes.head, list);
+  struct bytes_t received_bytes = blist_concat(list, received_len);
   blist_free(list);
 
-  hexdump("received", bytes.head, bytes.len);
+  hexdump("received", received_bytes.head, received_bytes.len);
 
 
-  struct inst instance_task = parse(bytes.head, bytes.len);
+  struct inst instance_task = parse(received_bytes.head, received_bytes.len);
   struct task_t task = cast_task(instance_task);
   preview_task(task);
   struct person_t person = person_from_task(task);

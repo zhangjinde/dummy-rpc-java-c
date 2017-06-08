@@ -18,14 +18,24 @@ struct blist *blist_append(struct blist *tail, const unsigned char *bytes, const
   return new_one;
 }
 
-void blist_concat(unsigned char *dest, struct blist *list) {
-  struct blist *listp = list;
-  size_t lenp = 0;
-  while (listp != NULL) {
-    memcpy(&dest[lenp], listp->bytes, listp->len);
-    lenp += listp->len;
-    listp = listp->next;
+struct bytes_t blist_concat(struct blist *list, size_t total_len) {
+  if (total_len == 0) {
+    // TODO calc total_len
   }
+
+  struct bytes_t bytes;
+  bytes.len = total_len;
+  bytes.head = malloc(sizeof(char) * bytes.len);
+
+  size_t read = 0;
+
+  while (list != NULL) {
+    memcpy(&bytes.head[read], list->bytes, list->len);
+    read += list->len;
+    list = list->next;
+  }
+
+  return bytes;
 }
 
 size_t blist_recv(int sd, struct blist **list) {
