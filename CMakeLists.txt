@@ -8,6 +8,7 @@ add_executable(client
   src/blist.c
   src/parser.c
   src/descriptor.c
+  src/strutil.c
   src/task.c
   src/person.c
 )

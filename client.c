@@ -57,11 +57,12 @@ int main(int argc, char const *argv[]) {
   hexdump("received", bytes.head, bytes.len);
 
 
-  struct inst instance = parse(bytes.head, bytes.len);
-  struct task_t task = cast_task(instance);
+  struct inst instance_task = parse(bytes.head, bytes.len);
+  struct task_t task = cast_task(instance_task);
   preview_task(task);
   struct person_t person = person_from_task(task);
   preview_person(person);
+  struct inst instance_person = inter_serialize_person(person);
 
 
   close(sd);

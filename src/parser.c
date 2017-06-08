@@ -7,15 +7,9 @@
 #include "parser.h"
 #include "descriptor.h"
 #include "hexdump.h"
+#include "strutil.h"
 
 #define SERIAL_VERSION_UID_SIZE 8
-
-char *newnstr(const unsigned char *bytes, const size_t len) {
-  char *ret = malloc(sizeof(unsigned char) * (len + 1));
-  memcpy(ret, bytes, len);
-  memset(&ret[len], '\0', 1);
-  return ret;
-}
 
 size_t read_bytes_1(char *dest, const unsigned char *bytes) {
   *dest = bytes[0];
