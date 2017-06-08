@@ -8,4 +8,10 @@ struct bytes_t {
   size_t len;
 };
 
+struct bytes_t bytes_from_char(unsigned char from);
+struct bytes_t bytes_from_short(unsigned short from);
+struct bytes_t bytes_from_int(unsigned int from);
+struct bytes_t bytes_from_long(unsigned long from);
+struct bytes_t bytes_from_string(const char *str);
+
 #endif /* end of include guard: BYTES_H */

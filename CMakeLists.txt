@@ -13,4 +13,5 @@ add_executable(client
   src/person.c
   src/serializer.c
   src/net.c
+  src/bytes.c
 )

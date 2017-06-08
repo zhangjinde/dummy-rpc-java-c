@@ -8,6 +8,8 @@
 #include "hexdump.h"
 #include "parser.h"
 #include "net.h"
+#include "bytes.h"
+
 
 int net_connect() {
   struct sockaddr_in addr;
@@ -21,15 +23,15 @@ int net_connect() {
 }
 
 struct inst net_fetch(const char *service_name) {
-  size_t command_len = 8 + strlen(service_name);
+  size_t command_len = 7 + strlen(service_name);
   char *command = malloc(sizeof(char) * command_len);
   memset(command, '\0', command_len);
   strcat(command, "fetch ");
   strcat(command, service_name);
-  strcat(command, "\n");
 
   int sd = net_connect();
   send(sd, command, command_len, 0);
+  free(command);
 
   struct blist list = new_blist();
   size_t received_len = blist_recv(sd, &list);
@@ -49,16 +51,20 @@ struct inst net_fetch(const char *service_name) {
 }
 
 void net_call(const char *service_name, const char *method_name, struct bytes_t arg_bytes) {
-  size_t command_len = 8 + strlen(service_name) + strlen(method_name);
+  size_t command_len = 7 + strlen(service_name) + strlen(method_name);
   char *command = malloc(sizeof(char) * command_len);
   memset(command, '\0', command_len);
   strcat(command, "call ");
   strcat(command, service_name);
   strcat(command, " ");
   strcat(command, method_name);
-  strcat(command, "\n");
+  struct bytes_t arg_bytes_len = bytes_from_int(arg_bytes.len);
+  printf("arg_bytes.len: %ld, %lx\n", arg_bytes.len, arg_bytes.len);
 
   int sd = net_connect();
   send(sd, command, command_len, 0);
+  send(sd, arg_bytes_len.head, arg_bytes_len.len, 0);
   send(sd, arg_bytes.head, arg_bytes.len, 0);
+  free(command);
+  close(sd);
 }
