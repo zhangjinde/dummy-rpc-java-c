@@ -49,6 +49,24 @@ void serialize_utf(struct blist *list, const char *str) {
   blist_push(list, bytes_from_string(str));
 }
 
+void serialize_classdata(struct blist *list, const struct object_t *object) {
+  struct field_t *f = object->clazz.field;
+  struct classdata_t *cd = object->classdata;
+
+  while (f != NULL && cd != NULL) {
+    switch (f->type) {
+    case 'L':
+      serialize_object(list, cd->obj);
+      break;
+    default:
+      printf("not implemented (classdata type %c)\n", f->type);
+    }
+
+    f = f->next;
+    cd = cd->next;
+  }
+}
+
 void serialize_className(struct blist *list, const char *name) {
   serialize_utf(list, name);
 }
@@ -152,6 +170,7 @@ void serialize_newObject(struct blist *list, const struct inst *instance) {
   blist_push(list, bytes_from_char(TC_OBJECT));
   serialize_classDesc(list, &instance->u.object.clazz);
   // TODO classdata
+  serialize_classdata(list, &instance->u.object);
 }
 
 void serialize_newString(struct blist *list, const struct inst *instance) {

@@ -39,11 +39,10 @@ size_t parse_utf(char **dest, const unsigned char *bytes) {
 }
 
 size_t parse_classdata(struct object_t *object, const unsigned char *bytes, const size_t len) {
-  struct class_t *clazz = &object->clazz;
   object->classdata = NULL;
 
   size_t read = 0;
-  struct field_t *field = clazz->field;
+  struct field_t *field = object->clazz.field;
   while (field != NULL) {
     struct classdata_t *classdata = malloc(sizeof(struct classdata_t));
 
