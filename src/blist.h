@@ -6,8 +6,7 @@
 #include "bytes.h"
 
 struct blist {
-  unsigned char *bytes;
-  size_t len;
+  struct bytes_t bytes;
   struct blist *next;
 };
 
