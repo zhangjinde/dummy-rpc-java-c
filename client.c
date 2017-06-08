@@ -61,10 +61,7 @@ int main(int argc, char const *argv[]) {
   struct person_t person = person_from_task(task);
   preview_person(person);
 
-  // TODO taskのhelloを呼ぶようにする
-  struct inst instance_person = inter_serialize_person(person);
-  struct bytes_t serial = serialize(instance_person);
-
+  task.hello(&task, person);
 
   return 0;
 }

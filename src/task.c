@@ -1,7 +1,6 @@
 #include <string.h>
 #include "task.h"
-
-
+#include "serializer.h"
 
 struct task_t cast_task(struct inst instance) {
   struct task_t task = new_task();
@@ -33,7 +32,8 @@ struct task_t new_task() {
 }
 
 void task_hello(const struct task_t *self, struct person_t person) {
-
+  struct inst instance = inter_serialize_person(person);
+  struct bytes_t bytes = serialize(instance);
 }
 
 void preview_task(const struct task_t task) {
