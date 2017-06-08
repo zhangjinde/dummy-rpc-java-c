@@ -1,6 +1,7 @@
 #include "serializer.h"
+#include "blist.h"
 
 struct bytes_t serialize(struct inst instance) {
-  struct bytes_t bytes;
-  return bytes;
+  struct blist list = new_blist();
+  return blist_concat(list);
 }

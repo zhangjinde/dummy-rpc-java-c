@@ -42,14 +42,14 @@ int main(int argc, char const *argv[]) {
   const char* command = "fetch Task\n";
   send(sd, command, strlen(command), 0);
 
-  struct blist *list;
+  struct blist list = new_blist();
   size_t received_len = blist_recv(sd, &list);
   close(sd);
   if (received_len == 0) {
     return 1;
   }
 
-  struct bytes_t received_bytes = blist_concat(list, received_len);
+  struct bytes_t received_bytes = blist_concat(list);
   blist_free(list);
 
   hexdump("received", received_bytes.head, received_bytes.len);
