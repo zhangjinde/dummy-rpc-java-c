@@ -19,8 +19,9 @@
 #define PORT 8100
 
 struct person_t person_from_task(const struct task_t task) {
-  struct person_t person;
+  struct person_t person = new_person();
   size_t person_name_len = strlen(task.str1) + strlen(task.str2) + 1;
+  free(person.name);
   person.name = malloc(sizeof(char) * person_name_len);
   memset(person.name, '\0', person_name_len);
   strcat(person.name, task.str1);
