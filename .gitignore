@@ -7,3 +7,5 @@ CMakeCache.txt
 cmake_install.cmake
 *.a
 *.bin
+.classpath
+.project
