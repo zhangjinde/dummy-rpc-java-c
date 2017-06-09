@@ -1,12 +1,17 @@
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.lang.Class;
+import java.lang.reflect.Method;
 
 public class Server {
   private static int PORT = 8100;
-  Task task = new Task();
+
+  private static HashMap<String, Object> services;
 
   public static void main(String args[]) {
+    services = new HashMap<String, Object>();
+    services.put("Task", new Task());
     Server server = new Server();
   }
 
@@ -40,8 +45,9 @@ public class Server {
     System.out.println("command 1 : " + command1);
 
     if (command1.equals("fetch")) {
+      Object service = services.get(commands.next());
       ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
-      oos.writeObject(task);
+      oos.writeObject(service);
     } else if (command1.equals("call")) {
       int len = is.readInt();
       System.out.println("lenth: " + len);
@@ -55,10 +61,20 @@ public class Server {
       System.out.print("\n");
 
       ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes));
-      Person person = (Person)ois.readObject();
+      Object arg1 = ois.readObject();
       ois.close();
 
-      task.hello(person);
+      String serviceName = commands.next();
+
+      try {
+        Object service = services.get(serviceName);
+        Class<?> clazz = Class.forName(serviceName);
+        // Method method = clazz.getDeclaredMethod(commands.next(), arg1.getClass());
+        Method method = clazz.getMethod(commands.next(), arg1.getClass());
+        method.invoke(service, arg1);
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
 
     } else {
       System.out.println("invalid command");
