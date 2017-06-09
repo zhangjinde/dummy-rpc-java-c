@@ -59,7 +59,7 @@ void net_call(const char *service_name, const char *method_name, struct bytes_t 
   strcat(command, " ");
   strcat(command, method_name);
   struct bytes_t arg_bytes_len = bytes_from_int(arg_bytes.len);
-  printf("arg_bytes.len: %ld, %lx\n", arg_bytes.len, arg_bytes.len);
+  printf("arg_bytes.len: %ld\n", arg_bytes.len);
 
   int sd = net_connect();
   send(sd, command, command_len, 0);
