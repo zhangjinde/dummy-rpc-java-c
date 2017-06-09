@@ -29,57 +29,63 @@ public class Server {
   }
 
   private void accept(Socket socket) throws IOException, ClassNotFoundException {
-    System.out.println(">>> accepted");
+    System.out.println("\n>>> accepted");
 
-    DataInputStream is = new DataInputStream(socket.getInputStream());
+    DataInputStream dis = new DataInputStream(socket.getInputStream());
 
     String command = "";
     char c;
-    while ((c = (char)is.readByte()) != '\0') {
+    while ((c = (char)dis.readByte()) != '\0') {
       command += c;
     }
     System.out.println("command: " + command);
 
     Iterator<String> commands = Arrays.asList(command.split(" ")).iterator();
     String command1 = commands.next();
-    System.out.println("command 1 : " + command1);
 
     if (command1.equals("fetch")) {
-      Object service = services.get(commands.next());
       ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
-      oos.writeObject(service);
+      fetch(oos, commands.next());
     } else if (command1.equals("call")) {
-      int len = is.readInt();
-      System.out.println("lenth: " + len);
-      byte[] bytes = new byte[len];
-      for (int i = 0; i < len; i++) {
-        byte b = is.readByte();
-        System.out.print(String.format("%02x", b & 0xFF));
-        System.out.print(i % 10 == 9 ? "\n" : " ");
-        bytes[i] = (byte)b;
-      }
-      System.out.print("\n");
-
-      ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes));
-      Object arg1 = ois.readObject();
-      ois.close();
-
-      String serviceName = commands.next();
-
-      try {
-        Object service = services.get(serviceName);
-        Class<?> clazz = Class.forName(serviceName);
-        // Method method = clazz.getDeclaredMethod(commands.next(), arg1.getClass());
-        Method method = clazz.getMethod(commands.next(), arg1.getClass());
-        method.invoke(service, arg1);
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-
+      call(dis, commands.next(), commands.next());
     } else {
       System.out.println("invalid command");
     }
 
     System.out.println("<<< end");
+  }
+
+  private void fetch(ObjectOutputStream oos, String serviceName) throws IOException {
+    System.out.println("[fetch] " + serviceName);
+    Object service = services.get(serviceName);
+    oos.writeObject(service);
+  }
+
+  private void call(DataInputStream dis, String serviceName, String methodName) throws IOException {
+    System.out.println("[call] " + serviceName + " " + methodName);
+
+    int len = dis.readInt();
+    System.out.println("args bytes lenth: " + len);
+    byte[] bytes = new byte[len];
+
+    System.out.println("hexdump:");
+    for (int i = 0; i < len; i++) {
+      byte b = dis.readByte();
+      System.out.print(String.format("%02x", b & 0xFF));
+      System.out.print(i % 10 == 9 ? "\n" : " ");
+      bytes[i] = (byte)b;
+    }
+    System.out.print("\n");
+
+    System.out.println("call:");
+    try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes));) {
+      Object arg1 = ois.readObject();
+      Object service = services.get(serviceName);
+      Class<?> clazz = Class.forName(serviceName);
+      Method method = clazz.getMethod(methodName, arg1.getClass());
+      method.invoke(service, arg1);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
 }
